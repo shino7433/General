@@ -10,6 +10,7 @@
 |---|---|
 | [docs/plan.md](docs/plan.md) | **計画書本体** — 戦略・ロードマップ・コスト・KPI・リスク |
 | [docs/freelance.md](docs/freelance.md) | 開発代行の手順書(主軸) — プラットフォーム比較・提案文テンプレ・受注〜納品フロー |
+| [docs/crowdworks.md](docs/crowdworks.md) | クラウドワークス案件獲得プレイブック — 検索条件・週次ルーティン・提案文3型・KPIファネル |
 | [docs/apps.md](docs/apps.md) | マイクロWebツール戦略(並走) — ネタ選定・技術構成・リリースチェックリスト |
 | [docs/monetize.md](docs/monetize.md) | 広告・アフィリエイト手順書 — ASP登録・AdSense審査対策・広告配置 |
 | [docs/ideas.md](docs/ideas.md) | ツール候補の評価表と案件タイプのバックログ |
