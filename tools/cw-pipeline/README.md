@@ -29,3 +29,20 @@ CWからのメール（スカウト/おすすめ/保存検索新着）に含ま�
 - スプレッドシート「CW案件管理」／Apps Scriptプロジェクト「CW案件パイプライン」に1ファイル構成で配置し、`ensureSheet`→`collectCwJobs`→`installHourlyTrigger` を実行済み。
 - 初回収集で既存メールから案件2件（いずれもスカウト）を `未判定` で取得。再実行で「新着CWメールなし」を確認（冪等）。
 - 1時間ごとの時間主導トリガーで無人収集を継続中。
+
+## フェーズ2: 評価ループのWeb App（出先ダッシュボード）
+
+評価ループ（[evaluate/RUNBOOK.md](evaluate/RUNBOOK.md)）が使うAPI。GASプロジェクトに `evaluate/api-shape.js`＋`evaluate/estimate.js`＋`api.js` の中身を `コード.gs` に追記して配置する（parser/main と同じ1ファイル構成）。
+
+1. 上記3ファイルの中身を `コード.gs` 末尾に連結して保存。
+2. 関数 `initApiToken` を実行 → 実行ログの `CW_API_TOKEN=...` を `tools/cw-pipeline/.secrets/api.env`（gitignore済み）に保存。
+3. **デプロイ → 新しいデプロイ → ウェブアプリ**（実行:自分／アクセス:全員）→ ウェブアプリURLを `.secrets/api.env` の `CW_API_URL` に保存。
+4. 動作確認: `curl "$CW_API_URL?token=$CW_API_TOKEN&view=pending"` で未判定JSONが返る。
+5. 出先確認: スマホで `"$CW_API_URL?view=summary&token=$CW_API_TOKEN"` をブックマーク。
+
+エンドポイント: `GET ?view=pending`（未判定JSON）/ `GET ?view=summary`（HTMLダッシュボード）/ `POST {token,jobId,eval}`（E/F/G・J〜R書き戻し）。
+
+> トークンは秘匿。`.secrets/` はコミットしない。コード改修後は「デプロイを管理→新バージョン」で再デプロイ（URL不変）。**POSTはGASが302リダイレクトするため2段階で叩く**（[RUNBOOK](evaluate/RUNBOOK.md) の `cwpost` 参照）。
+
+## 稼働状況（フェーズ2・2026-07-07）
+Web App「評価ループAPI v1」をデプロイ済み。pending取得／forbidden／評価書き戻し／not_found／サマリHTMLをcurl・ブラウザで検証済み。日次の評価ループ起動方式（`/loop`等）は次段で確定。
