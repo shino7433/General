@@ -41,11 +41,25 @@ function parseEmail(email) {
   });
 }
 
+function computeNewRows(records, existingIds, now) {
+  var seen = {};
+  (existingIds || []).forEach(function (id) { seen[String(id)] = true; });
+  var rows = [];
+  (records || []).forEach(function (r) {
+    var id = String(r.jobId);
+    if (seen[id]) return;
+    seen[id] = true;
+    rows.push([id, now, '', r.title || '', '', '', '', r.url || '', r.sourceType || '', '未判定']);
+  });
+  return rows;
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     extractJobIds: extractJobIds,
     cleanTitle: cleanTitle,
     detectSourceType: detectSourceType,
     parseEmail: parseEmail,
+    computeNewRows: computeNewRows,
   };
 }

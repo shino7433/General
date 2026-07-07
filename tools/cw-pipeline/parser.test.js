@@ -59,3 +59,22 @@ test('parseEmail: スカウトメールから1レコード生成', () => {
 test('parseEmail: 案件URLの無いメールは空配列', () => {
   assert.deepStrictEqual(parseEmail({ subject: '認証コード', body: 'コードは1234' }), []);
 });
+
+const { computeNewRows } = require('./parser.js');
+
+const recs = [
+  { jobId: '111', url: 'https://crowdworks.jp/public/jobs/111', title: 'A案件', sourceType: 'スカウト' },
+  { jobId: '222', url: 'https://crowdworks.jp/public/jobs/222', title: 'B案件', sourceType: 'その他' },
+  { jobId: '111', url: 'https://crowdworks.jp/public/jobs/111', title: 'A案件', sourceType: 'スカウト' },
+];
+
+test('computeNewRows: 既存IDとバッチ内重複を除外し列A〜Jの行を返す', () => {
+  const rows = computeNewRows(recs, ['222'], '2026-07-07T10:00:00');
+  assert.deepStrictEqual(rows, [
+    ['111', '2026-07-07T10:00:00', '', 'A案件', '', '', '', 'https://crowdworks.jp/public/jobs/111', 'スカウト', '未判定'],
+  ]);
+});
+
+test('computeNewRows: 全て既存なら空', () => {
+  assert.deepStrictEqual(computeNewRows(recs, ['111', '222'], 'now'), []);
+});
