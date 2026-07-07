@@ -24,10 +24,28 @@ function detectSourceType(subject, body) {
   return 'その他';
 }
 
+function parseEmail(email) {
+  email = email || {};
+  var subject = email.subject || '';
+  var body = email.body || '';
+  var ids = extractJobIds(subject + '\n' + body);
+  var title = cleanTitle(subject);
+  var sourceType = detectSourceType(subject, body);
+  return ids.map(function (id) {
+    return {
+      jobId: id,
+      url: 'https://crowdworks.jp/public/jobs/' + id,
+      title: title,
+      sourceType: sourceType,
+    };
+  });
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     extractJobIds: extractJobIds,
     cleanTitle: cleanTitle,
     detectSourceType: detectSourceType,
+    parseEmail: parseEmail,
   };
 }

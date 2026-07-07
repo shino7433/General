@@ -40,3 +40,22 @@ test('detectSourceType: 相談メールはスカウト', () => {
 test('detectSourceType: 判定材料が無ければその他', () => {
   assert.strictEqual(detectSourceType('会員登録完了のご案内', 'はじめてガイド'), 'その他');
 });
+
+const { parseEmail } = require('./parser.js');
+
+test('parseEmail: スカウトメールから1レコード生成', () => {
+  const email = {
+    subject: '【クラウドワークス】【Instagram投稿作成案件】投稿を一緒に盛り上げる仲間を募集します！（※学生不可）について相談がありました',
+    body: 'PopStar.です。\nhttps://crowdworks.jp/public/jobs/13286576\nhttps://crowdworks.jp/messages/416582123',
+  };
+  assert.deepStrictEqual(parseEmail(email), [{
+    jobId: '13286576',
+    url: 'https://crowdworks.jp/public/jobs/13286576',
+    title: '【Instagram投稿作成案件】投稿を一緒に盛り上げる仲間を募集します！（※学生不可）',
+    sourceType: 'スカウト',
+  }]);
+});
+
+test('parseEmail: 案件URLの無いメールは空配列', () => {
+  assert.deepStrictEqual(parseEmail({ subject: '認証コード', body: 'コードは1234' }), []);
+});
