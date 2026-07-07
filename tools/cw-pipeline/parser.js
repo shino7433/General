@@ -1,5 +1,5 @@
 function extractJobIds(text) {
-  var re = /(?:crowdworks\.jp)?\/public\/jobs\/(\d+)/g;
+  var re = /crowdworks\.jp\/public\/jobs\/(\d+)/g;
   var ids = [];
   var seen = {};
   var m;
