@@ -19,3 +19,14 @@ test('extractJobIds: 複数案件を出現順・重複排除で返す', () => {
 test('extractJobIds: 該当なしは空配列', () => {
   assert.deepStrictEqual(extractJobIds('案件URLなし'), []);
 });
+
+const { cleanTitle } = require('./parser.js');
+
+test('cleanTitle: CW接頭辞を除去し案件側の括弧は残す', () => {
+  const s = '【クラウドワークス】【Instagram投稿作成案件】投稿を一緒に盛り上げる仲間を募集します！（※学生不可）について相談がありました';
+  assert.strictEqual(cleanTitle(s), '【Instagram投稿作成案件】投稿を一緒に盛り上げる仲間を募集します！（※学生不可）');
+});
+
+test('cleanTitle: 接頭辞や定型句が無ければそのまま', () => {
+  assert.strictEqual(cleanTitle('スプレッドシート自動化のお仕事'), 'スプレッドシート自動化のお仕事');
+});
