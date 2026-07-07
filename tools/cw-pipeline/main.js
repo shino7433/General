@@ -3,7 +3,9 @@ var HEADERS = ['案件ID','取得日時','掲載日','タイトル','カテゴ�
 var STATUS_OPTIONS = ['未判定','Go','NoGo','応募済','受注','失注','納品','クローズ'];
 var STATUS_COL = 10; // 列J
 var PROP_LAST_EPOCH = 'CW_PIPELINE_LAST_EPOCH';
-var GMAIL_QUERY = 'from:no-reply@crowdworks.jp newer_than:2d';
+// 検索窓はチェックポイントの取りこぼし防止のため広めに取る（重複はチェックポイントで排除するため副作用なし）。
+// トリガーが最大7日停止しても未処理メールを拾える安全余裕。
+var GMAIL_QUERY = 'from:no-reply@crowdworks.jp newer_than:7d';
 
 function ensureSheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
