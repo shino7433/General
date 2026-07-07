@@ -30,3 +30,13 @@ test('cleanTitle: CW接頭辞を除去し案件側の括弧は残す', () => {
 test('cleanTitle: 接頭辞や定型句が無ければそのまま', () => {
   assert.strictEqual(cleanTitle('スプレッドシート自動化のお仕事'), 'スプレッドシート自動化のお仕事');
 });
+
+const { detectSourceType } = require('./parser.js');
+
+test('detectSourceType: 相談メールはスカウト', () => {
+  assert.strictEqual(detectSourceType('…について相談がありました', '見積もり相談などをさせて頂きたい'), 'スカウト');
+});
+
+test('detectSourceType: 判定材料が無ければその他', () => {
+  assert.strictEqual(detectSourceType('会員登録完了のご案内', 'はじめてガイド'), 'その他');
+});

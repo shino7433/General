@@ -16,6 +16,18 @@ function cleanTitle(subject) {
   return s.trim();
 }
 
+function detectSourceType(subject, body) {
+  var text = String(subject || '') + '\n' + String(body || '');
+  if (/相談がありました|スカウト|見積もり相談/.test(text)) return 'スカウト';
+  if (/新着のお仕事|保存した検索条件|条件に一致|新着のお知らせ/.test(text)) return '保存検索';
+  if (/おすすめ|あなたにおすすめ|ピックアップ/.test(text)) return 'おすすめ';
+  return 'その他';
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { extractJobIds: extractJobIds, cleanTitle: cleanTitle };
+  module.exports = {
+    extractJobIds: extractJobIds,
+    cleanTitle: cleanTitle,
+    detectSourceType: detectSourceType,
+  };
 }
