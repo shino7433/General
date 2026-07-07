@@ -56,3 +56,11 @@ function collectCwJobs() {
   props.setProperty(PROP_LAST_EPOCH, String(maxEpoch));
   Logger.log('追記件数: ' + appended);
 }
+
+function installHourlyTrigger() {
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    if (t.getHandlerFunction() === 'collectCwJobs') ScriptApp.deleteTrigger(t);
+  });
+  ScriptApp.newTrigger('collectCwJobs').timeBased().everyHours(1).create();
+  Logger.log('1時間ごとのトリガーを設置しました');
+}
