@@ -22,3 +22,15 @@ test('daysUntilDue: 当日は0（時刻差を無視）', () => {
 test('daysUntilDue: 超過はマイナス、月またぎも正しい', () => {
   assert.strictEqual(daysUntilDue(new Date(2026, 7, 2), new Date(2026, 6, 31)), -2);
 });
+
+const { renderTemplate } = require('./core.js');
+
+test('renderTemplate: 日本語キーを差し込む', () => {
+  const out = renderTemplate('『{件名}』は残り{残り日数}日（{期限日}）', {
+    件名: '請求書A', 残り日数: 3, 期限日: '2026-07-20',
+  });
+  assert.strictEqual(out, '『請求書A』は残り3日（2026-07-20）');
+});
+test('renderTemplate: 未知のプレースホルダは残す', () => {
+  assert.strictEqual(renderTemplate('{宛先}様', {}), '{宛先}様');
+});

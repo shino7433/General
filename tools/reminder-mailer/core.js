@@ -13,6 +13,13 @@ function daysUntilDue(today, dueDate) {
   return Math.round((b - a) / MS);
 }
 
+function renderTemplate(text, vars) {
+  vars = vars || {};
+  return String(text == null ? '' : text).replace(/\{([^{}]+)\}/g, function (m, key) {
+    return Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : m;
+  });
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue };
+  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate };
 }
