@@ -20,6 +20,16 @@ function renderTemplate(text, vars) {
   });
 }
 
+function parseSentState(cell) {
+  return String(cell == null ? '' : cell)
+    .split(/[,\s]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+}
+function markSentState(cell, label) {
+  var arr = parseSentState(cell);
+  if (arr.indexOf(String(label)) === -1) arr.push(String(label));
+  return arr.join(' ');
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate };
+  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate, parseSentState: parseSentState, markSentState: markSentState };
 }

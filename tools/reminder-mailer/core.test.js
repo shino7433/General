@@ -34,3 +34,16 @@ test('renderTemplate: 日本語キーを差し込む', () => {
 test('renderTemplate: 未知のプレースホルダは残す', () => {
   assert.strictEqual(renderTemplate('{宛先}様', {}), '{宛先}様');
 });
+
+const { parseSentState, markSentState } = require('./core.js');
+
+test('parseSentState: 空白区切りをラベル配列に', () => {
+  assert.deepStrictEqual(parseSentState('-7 0'), ['-7', '0']);
+  assert.deepStrictEqual(parseSentState(''), []);
+});
+test('markSentState: 新規ラベルを追記', () => {
+  assert.strictEqual(markSentState('-7', '0'), '-7 0');
+});
+test('markSentState: 既存ラベルは重複させない（冪等）', () => {
+  assert.strictEqual(markSentState('-7 0', '-7'), '-7 0');
+});
