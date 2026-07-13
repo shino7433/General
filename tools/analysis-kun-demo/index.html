@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>分析くん / ANALYSIS UNIT — Amazon販売データ分析</title>
+<style>
+  :root{
+    --bg:#0F131A; --panel:#161C26; --panel2:#1B2330; --sunk:#0C1017;
+    --line:rgba(198,124,78,.20); --line2:rgba(255,255,255,.065);
+    --ink:#E7ECF3; --muted:#8B94A4; --dim:#5D6675;
+    --copper:#C67C4E; --copper-hi:#E4995E; --cyan:#5AC8DA; --amber:#E0A64B;
+    --up:#5AC8DA; --down:#6E7789; --warn:#D46A5A;
+    --mono: ui-monospace,"SF Mono","JetBrains Mono","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 82% -10%, rgba(198,124,78,.08), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(90,200,218,.05), transparent 60%),
+      var(--bg);
+    color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--copper)}
+  a{color:var(--cyan)}
+
+  /* ---- Spec-sheet header ---- */
+  header{
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(198,124,78,.06), transparent);
+    padding:18px clamp(16px,3vw,34px) 0;
+  }
+  .brandrow{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap}
+  .brand{display:flex; align-items:baseline; gap:14px}
+  .brand h1{font-size:clamp(22px,3.4vw,34px); margin:0; letter-spacing:-.01em; font-weight:650}
+  .brand .unit{font-family:var(--mono); font-size:11px; letter-spacing:.3em; color:var(--copper); text-transform:uppercase; padding-bottom:6px}
+  .brand .dot{width:9px;height:9px;border-radius:2px;background:var(--copper);box-shadow:0 0 12px var(--copper);align-self:center}
+  .tagline{color:var(--muted); font-size:13px; margin:2px 0 0}
+  /* readout strip */
+  .readout{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    margin-top:16px; background:var(--line2); border:1px solid var(--line2);
+    border-bottom:none; border-radius:8px 8px 0 0; overflow:hidden;
+  }
+  .ro{background:var(--sunk); padding:10px 14px}
+  .ro .k{font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim)}
+  .ro .v{font-family:var(--mono); font-size:18px; font-variant-numeric:tabular-nums; margin-top:3px; color:var(--ink)}
+  .ro .v small{color:var(--muted); font-size:12px}
+
+  /* ---- Layout ---- */
+  .wrap{display:grid; grid-template-columns:300px 1fr; gap:0; align-items:start}
+  @media(max-width:900px){ .wrap{grid-template-columns:1fr} }
+  aside{
+    position:sticky; top:0; align-self:start;
+    border-right:1px solid var(--line); padding:22px clamp(16px,2vw,24px);
+    min-height:100vh; background:linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+  }
+  @media(max-width:900px){ aside{position:static; min-height:0; border-right:none; border-bottom:1px solid var(--line)} }
+  main{padding:22px clamp(16px,3vw,34px) 80px; min-width:0}
+
+  .ctl{margin-bottom:22px}
+  .ctl > label{display:block; margin-bottom:8px}
+  .field{
+    width:100%; background:var(--sunk); color:var(--ink); border:1px solid var(--line2);
+    border-radius:7px; padding:9px 11px; font-family:var(--mono); font-size:13px;
+  }
+  .field:focus{outline:none; border-color:var(--copper); box-shadow:0 0 0 3px rgba(198,124,78,.15)}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px}
+  .chip{
+    font-family:var(--mono); font-size:12px; color:var(--muted); cursor:pointer;
+    background:var(--panel); border:1px solid var(--line2); border-radius:999px; padding:5px 11px;
+    transition:.15s;
+  }
+  .chip:hover{color:var(--ink); border-color:var(--copper)}
+  .chip[aria-pressed="true"]{color:var(--bg); background:var(--copper); border-color:var(--copper); font-weight:600}
+  .btn{
+    width:100%; cursor:pointer; font-family:var(--mono); font-size:13px; letter-spacing:.04em;
+    background:linear-gradient(180deg,var(--copper-hi),var(--copper)); color:#1a1206; font-weight:700;
+    border:none; border-radius:7px; padding:11px; text-transform:uppercase;
+  }
+  .btn:hover{filter:brightness(1.06)}
+  .btn.ghost{background:var(--panel); color:var(--muted); border:1px solid var(--line2); font-weight:600}
+  .btn.ghost:hover{color:var(--ink); border-color:var(--copper)}
+  .stack>*+*{margin-top:9px}
+  .maprow{display:grid; grid-template-columns:64px 1fr; gap:6px; margin-top:6px}
+  .maprow input{font-size:12px; padding:6px 8px}
+  .hint{color:var(--dim); font-size:11.5px; font-family:var(--mono); margin-top:7px; line-height:1.45}
+  .drop{
+    border:1px dashed var(--line); border-radius:8px; padding:14px; text-align:center;
+    color:var(--dim); font-family:var(--mono); font-size:12px; cursor:pointer; transition:.15s;
+  }
+  .drop.hot{border-color:var(--copper); color:var(--copper); background:rgba(198,124,78,.06)}
+  textarea.field{min-height:90px; resize:vertical; white-space:pre; line-height:1.4}
+
+  /* ---- Modules ---- */
+  .modhead{display:flex; align-items:baseline; gap:12px; margin:34px 0 14px}
+  .modhead:first-child{margin-top:4px}
+  .modhead .no{font-family:var(--mono); font-size:12px; color:var(--copper); letter-spacing:.1em}
+  .modhead h2{font-size:17px; margin:0; font-weight:620; letter-spacing:.01em}
+  .modhead .sub{color:var(--dim); font-size:12px; font-family:var(--mono); margin-left:auto}
+  .rule{height:1px; background:linear-gradient(90deg,var(--line),transparent); margin-top:-6px}
+
+  .grid{display:grid; gap:12px}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:1.15fr .85fr}
+  @media(max-width:720px){ .g4{grid-template-columns:repeat(2,1fr)} .g3,.g2{grid-template-columns:1fr} }
+
+  .card{background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:15px 16px}
+  .card.k{padding:13px 15px}
+  .card .lab{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--dim)}
+  .card .big{font-family:var(--mono); font-size:26px; font-variant-numeric:tabular-nums; margin-top:5px; letter-spacing:-.01em}
+  .card .big small{font-size:13px; color:var(--muted); letter-spacing:0}
+  .card .foot{font-size:11.5px; color:var(--muted); margin-top:4px; font-family:var(--mono)}
+  .card h3{margin:0 0 12px; font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.02em}
+
+  /* bars / rankings */
+  .rank{display:flex; flex-direction:column; gap:9px}
+  .row{display:grid; grid-template-columns:1fr auto; gap:10px 12px; align-items:center}
+  .row .name{font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .row .val{font-family:var(--mono); font-size:12.5px; color:var(--ink); font-variant-numeric:tabular-nums}
+  .bar{grid-column:1/-1; height:6px; border-radius:4px; background:var(--sunk); overflow:hidden}
+  .bar > i{display:block; height:100%; background:linear-gradient(90deg,var(--copper),var(--copper-hi)); border-radius:4px}
+  .bar.cy > i{background:linear-gradient(90deg,#3f9fb0,var(--cyan))}
+  .pill{font-family:var(--mono); font-size:10.5px; padding:2px 7px; border-radius:5px; letter-spacing:.03em}
+  .pill.up{color:var(--cyan); background:rgba(90,200,218,.12)}
+  .pill.flat{color:var(--muted); background:rgba(255,255,255,.05)}
+  .pill.down{color:#c98b7f; background:rgba(212,106,90,.12)}
+  .pill.new{color:var(--amber); background:rgba(224,166,75,.12)}
+
+  table{width:100%; border-collapse:collapse}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line2); font-size:12.5px}
+  th{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim); font-weight:500}
+  td.num,th.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .sku{font-family:var(--mono); font-size:11px; color:var(--muted); background:var(--sunk); border:1px solid var(--line2); border-radius:4px; padding:1px 6px}
+  .sku b{color:var(--copper-hi); font-weight:700}
+
+  /* month chart */
+  .chart{width:100%; height:170px; display:block}
+  .chart .axis{fill:var(--dim); font-family:var(--mono); font-size:9px}
+  .chart rect.mb{fill:var(--copper); opacity:.85}
+  .chart rect.mb.lo{opacity:.32}
+  .chart rect.mb.hi{fill:var(--copper-hi)}
+  .chart polyline{fill:none; stroke:var(--cyan); stroke-width:1.6}
+  .chart circle{fill:var(--cyan)}
+  .chart line.grid{stroke:var(--line2)}
+
+  /* verdict scorecard (signature) */
+  .verdict{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+  @media(max-width:720px){ .verdict{grid-template-columns:1fr} }
+  .score{background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line); border-radius:10px; padding:14px 15px; position:relative; overflow:hidden}
+  .score::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:linear-gradient(180deg,var(--copper-hi),var(--copper))}
+  .score .top{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+  .score .mk{font-family:var(--mono); font-size:11px; letter-spacing:.1em; color:var(--copper); text-transform:uppercase}
+  .score .nm{font-size:14px; font-weight:600; margin:3px 0 2px}
+  .score .why{font-size:12px; color:var(--muted); line-height:1.45}
+  .score .meter{display:flex; align-items:center; gap:10px; margin-top:11px}
+  .score .meter .track{flex:1; height:8px; background:var(--sunk); border-radius:5px; overflow:hidden}
+  .score .meter .track > i{display:block; height:100%; background:linear-gradient(90deg,var(--copper),var(--copper-hi),var(--cyan)); border-radius:5px}
+  .score .meter .s{font-family:var(--mono); font-size:16px; font-variant-numeric:tabular-nums; color:var(--ink)}
+  .score .meter .s small{color:var(--dim); font-size:11px}
+
+  .empty{color:var(--dim); font-family:var(--mono); font-size:13px; padding:40px 0; text-align:center; border:1px dashed var(--line2); border-radius:10px}
+  .note{color:var(--dim); font-size:11.5px; font-family:var(--mono); margin-top:26px; padding-top:16px; border-top:1px solid var(--line2); line-height:1.6}
+  .flash{animation:fl .5s ease}
+  @keyframes fl{from{background:rgba(198,124,78,.10)} to{background:transparent}}
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important; transition:none!important} }
+  :focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brandrow">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>分析くん</h1>
+      <span class="unit">Analysis&nbsp;Unit&nbsp;/&nbsp;v0.8</span>
+    </div>
+    <div class="eyebrow" id="genreTag">GENRE&nbsp;·&nbsp;ALL</div>
+  </div>
+  <p class="tagline">Amazon 全注文レポートを取り込み、ジャンル単位で「次に何を仕入れるべきか」を出す — 自社実績ドリブンの分析ユニット。</p>
+  <div class="readout" id="readout">
+    <div class="ro"><div class="k">Records</div><div class="v" id="roRec">—</div></div>
+    <div class="ro"><div class="k">Date Range</div><div class="v" id="roRange">—</div></div>
+    <div class="ro"><div class="k">Net Sales</div><div class="v" id="roSales">—</div></div>
+    <div class="ro"><div class="k">Units</div><div class="v" id="roUnits">—</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <aside>
+    <div class="ctl">
+      <label class="eyebrow">Genre / ジャンル抽出</label>
+      <input class="field" id="genre" placeholder="例: マザーボード" autocomplete="off">
+      <div class="chips" id="genreChips">
+        <span class="chip" data-g="">全ジャンル</span>
+        <span class="chip" data-g="マザーボード">マザーボード</span>
+        <span class="chip" data-g="メモリ">メモリ</span>
+        <span class="chip" data-g="SSD">SSD</span>
+        <span class="chip" data-g="モニター">モニター</span>
+      </div>
+    </div>
+
+    <div class="ctl">
+      <label class="eyebrow">SKU末尾コード → 仕入先</label>
+      <div class="maprow" style="margin-top:2px">
+        <input class="field" id="suffixN" type="number" min="1" max="4" value="2" aria-label="末尾文字数">
+        <div class="hint" style="margin-top:0">末尾N文字を<br>仕入先コードとして判別</div>
+      </div>
+      <div id="supMap" class="stack" style="margin-top:10px"></div>
+      <div class="hint">※ 御社の実SKUルールに合わせてここを差し替えるだけで対応します。</div>
+    </div>
+
+    <div class="ctl stack">
+      <label class="eyebrow">Data / データ入力</label>
+      <button class="btn" id="loadSample">▶ サンプル読込（PCパーツ1年分）</button>
+      <div class="drop" id="drop">全注文レポート（TSV/CSV）をここにドロップ<br>またはクリックで選択</div>
+      <button class="btn ghost" id="pasteToggle">貼り付けで取り込む</button>
+      <textarea class="field" id="paste" placeholder="purchase-date&#9;sku&#9;asin&#9;product-name&#9;quantity-purchased&#9;item-price&#10;…" style="display:none"></textarea>
+      <input type="file" id="file" accept=".csv,.tsv,.txt" hidden>
+    </div>
+    <div class="hint">全ブラウザ内で完結（データは外部送信されません）。<br>納品は単一HTML＝Claudeに貼って「項目追加して」で拡張可能。</div>
+  </aside>
+
+  <main id="main">
+    <div class="empty" id="empty">◭ 左の「サンプル読込」を押すとデモデータで全分析を表示します。</div>
+    <div id="report" style="display:none"></div>
+  </main>
+</div>
+
+<script>
+"use strict";
+/* ============ seeded RNG (deterministic demo) ============ */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const pick=(r,arr)=>arr[Math.floor(r()*arr.length)];
+const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1));
+
+/* ============ demo dataset: Amazon JP 全注文レポート 風 ============ */
+const SUPPLIERS={D2:"ドスパラ仕入",W1:"PCワンズ",A3:"Ark",T1:"TSUKUMO",P2:"パソコン工房"};
+const CATALOG=[
+  // genre, maker, model, price[min,max], trend, primarySupplier, [secondarySupplier]
+  ["マザーボード","ASUS","ROG STRIX B650-A",[26000,34000],"rise","D2","W1"],
+  ["マザーボード","MSI","MAG B650 TOMAHAWK",[24000,30000],"stable","W1"],
+  ["マザーボード","GIGABYTE","B650 AORUS ELITE",[21000,27000],"stable","A3"],
+  ["マザーボード","ASRock","B650 PG Lightning",[18000,23000],"decline","T1"],
+  ["マザーボード","ASUS","PRIME B760-P",[17000,22000],"rise","D2"],
+  ["マザーボード","MSI","PRO Z790-A WIFI",[33000,42000],"stable","W1","A3"],
+  ["メモリ","Crucial","DDR5-5600 32GB",[11000,15000],"rise","D2"],
+  ["メモリ","Corsair","VENGEANCE DDR5-6000 32GB",[15000,21000],"rise","P2","W1"],
+  ["メモリ","G.Skill","Trident Z5 DDR5-6400 32GB",[19000,26000],"stable","A3"],
+  ["メモリ","Kingston","FURY DDR5-5200 16GB",[7000,10000],"decline","T1"],
+  ["メモリ","Crucial","DDR4-3200 16GB",[5500,8000],"decline","D2"],
+  ["SSD","Samsung","990 PRO 2TB",[22000,30000],"rise","W1","D2"],
+  ["SSD","WD","Black SN850X 1TB",[12000,17000],"stable","P2"],
+  ["SSD","Crucial","T500 2TB",[16000,21000],"rise","D2"],
+  ["SSD","Kioxia","EXCERIA G2 1TB",[7500,10500],"stable","A3"],
+  ["SSD","Samsung","980 1TB",[8000,11000],"decline","W1"],
+  ["モニター","Dell","U2723QE 27\" 4K",[62000,82000],"stable","T1"],
+  ["モニター","LG","27GP850 27\" QHD",[42000,55000],"rise","P2","A3"],
+  ["モニター","iiyama","G-MASTER GB2790",[34000,45000],"stable","T1"],
+  ["モニター","ASUS","TUF VG27AQ 27\"",[38000,49000],"decline","W1"],
+  ["モニター","LG","24MP400 24\"",[14000,19000],"oneoff","P2"],
+];
+const GPFX={"マザーボード":"MB","メモリ":"RAM","SSD":"SSD","モニター":"MON"};
+
+function genDataset(){
+  const r=mulberry32(20260713);
+  const rows=[]; const MONTHS=12; let ord=480000;
+  CATALOG.forEach((c,i)=>{
+    const [genre,maker,model,pr,trend,sup1,sup2]=c;
+    const asin="B0"+(10000+i*137).toString(36).toUpperCase().padStart(6,"0").slice(0,7);
+    const modelCode=(GPFX[genre]+String(i+1).padStart(2,"0")+"-"+model.replace(/[^A-Za-z0-9]/g,"").slice(0,7).toUpperCase());
+    const name=maker+" "+model;
+    // base monthly propensity by trend
+    for(let m=0;m<MONTHS;m++){
+      let base;
+      if(trend==="rise")      base=0.4+ (m/MONTHS)*2.4;
+      else if(trend==="decline")base=2.4- (m/MONTHS)*2.0;
+      else if(trend==="stable") base=1.2+ Math.sin(m/2)*0.35;
+      else base=0; // oneoff handled below
+      let orders=Math.max(0, Math.round(base + (r()*1.2-0.6)));
+      if(trend==="oneoff") orders = (m===ri(r,2,6))?1:0;
+      for(let o=0;o<orders;o++){
+        const qty=r()<0.82?1:ri(r,2,3);
+        const price=ri(r,pr[0],pr[1]);
+        const sup=(sup2 && r()<0.3)?sup2:sup1;
+        const sku=modelCode+"-"+sup;
+        const day=ri(r,1,28);
+        const mm=String(m+1).padStart(2,"0");
+        const dd=String(day).padStart(2,"0");
+        rows.push({
+          date:`2025-${mm}-${dd}`, month:`2025-${mm}`,
+          orderId:`250-${(ord++)}-${ri(r,1000000,9999999)}`,
+          sku, asin, name, maker, genre, qty, price
+        });
+      }
+    }
+  });
+  rows.sort((a,b)=>a.date<b.date?-1:1);
+  return rows;
+}
+
+/* ============ CSV/TSV parse (Amazon全注文レポート実列) ============ */
+const COLMAP={
+  date:["purchase-date","注文日時","購入日","payments-date"],
+  sku:["sku","出品者sku","商品sku"],
+  asin:["asin","asin1"],
+  name:["product-name","商品名","タイトル"],
+  qty:["quantity-purchased","quantity","数量","購入数量"],
+  price:["item-price","商品小計","価格","principal"]
+};
+function findCol(headers,keys){
+  const low=headers.map(h=>h.trim().toLowerCase());
+  for(const k of keys){const i=low.indexOf(k.toLowerCase()); if(i>=0)return i;}
+  return -1;
+}
+function parseReport(text){
+  const clean=text.replace(/\r/g,"").trim();
+  if(!clean) throw new Error("空です");
+  const sep=clean.split("\n")[0].includes("\t")?"\t":",";
+  const lines=clean.split("\n").map(l=>l.split(sep));
+  const H=lines[0];
+  const ci={date:findCol(H,COLMAP.date),sku:findCol(H,COLMAP.sku),asin:findCol(H,COLMAP.asin),
+            name:findCol(H,COLMAP.name),qty:findCol(H,COLMAP.qty),price:findCol(H,COLMAP.price)};
+  if(ci.date<0||ci.sku<0||ci.name<0) throw new Error("必須列(purchase-date / sku / product-name)が見つかりません");
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const c=lines[i]; if(c.length<2)continue;
+    const d=(c[ci.date]||"").slice(0,10);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(d))continue;
+    const sku=(c[ci.sku]||"").trim(); if(!sku)continue;
+    const name=(c[ci.name]||"").trim();
+    const qty=Math.max(1,parseInt((c[ci.qty]||"1").replace(/[^\d]/g,""))||1);
+    const price=parseFloat((c[ci.price]||"0").replace(/[^\d.]/g,""))||0;
+    rows.push({date:d, month:d.slice(0,7), orderId:ci.asin>=0?"":"", sku, asin:ci.asin>=0?(c[ci.asin]||"").trim():"", name,
+               maker:guessMaker(name), genre:"", qty, price});
+  }
+  if(!rows.length) throw new Error("有効な明細行がありません");
+  return rows;
+}
+function guessMaker(name){
+  const known=["ASUS","MSI","GIGABYTE","ASRock","Crucial","Corsair","G.Skill","Kingston","Samsung","WD","Western Digital","Kioxia","Dell","LG","iiyama","ASROCK"];
+  for(const k of known){ if(name.toLowerCase().includes(k.toLowerCase()))return k; }
+  return (name.split(/[\s　]/)[0]||"その他").slice(0,14);
+}
+
+/* ============ helpers ============ */
+const yen=n=>"¥"+Math.round(n).toLocaleString("ja-JP");
+const yenK=n=> n>=1e8?("¥"+(n/1e8).toFixed(2)+"億") : n>=1e4?("¥"+Math.round(n/1e4).toLocaleString()+"万") : yen(n);
+const num=n=>Math.round(n).toLocaleString("ja-JP");
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+function supplierOf(sku,n){ const s=sku.trim(); return s.slice(-n).toUpperCase(); }
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!=null)e.innerHTML=h; return e;};
+
+/* ============ state ============ */
+let DATA=[];
+const $=id=>document.getElementById(id);
+
+/* ============ analysis ============ */
+function analyze(rows, genre, suffixN, supMap){
+  const g=genre.trim().toLowerCase();
+  const inGenre=r=>!g || (r.genre&&r.genre.toLowerCase().includes(g)) || r.name.toLowerCase().includes(g) || r.sku.toLowerCase().includes(g);
+  const D=rows.filter(inGenre);
+  const months=[...new Set(rows.map(r=>r.month))].sort();
+  const recent3=months.slice(-3), prev3=months.slice(-6,-3);
+  const sales=r=>r.qty*r.price;
+
+  const overall={units:0,sales:0,orders:D.length,asins:new Set(),products:new Set(),byMonth:{}};
+  months.forEach(m=>overall.byMonth[m]={u:0,s:0});
+  D.forEach(r=>{ overall.units+=r.qty; overall.sales+=sales(r); overall.asins.add(r.asin||r.name);
+    overall.products.add(r.name); if(overall.byMonth[r.month]){overall.byMonth[r.month].u+=r.qty; overall.byMonth[r.month].s+=sales(r);} });
+
+  const byMaker={}, byProd={}, bySup={};
+  D.forEach(r=>{
+    const M=byMaker[r.maker]||(byMaker[r.maker]={u:0,s:0,asins:new Set(),months:new Set(),r3:0,p3:0});
+    M.u+=r.qty; M.s+=sales(r); M.asins.add(r.asin||r.name); M.months.add(r.month);
+    if(recent3.includes(r.month))M.r3+=r.qty; if(prev3.includes(r.month))M.p3+=r.qty;
+
+    const key=r.name; const P=byProd[key]||(byProd[key]={u:0,s:0,orders:0,months:new Set(),maker:r.maker,sku:r.sku,last:""});
+    P.u+=r.qty; P.s+=sales(r); P.orders++; P.months.add(r.month); if(r.date>P.last)P.last=r.date;
+
+    const code=supplierOf(r.sku,suffixN);
+    const S=bySup[code]||(bySup[code]={u:0,s:0,makers:{},prods:{}});
+    S.u+=r.qty; S.s+=sales(r); S.makers[r.maker]=(S.makers[r.maker]||0)+r.qty; S.prods[r.name]=(S.prods[r.name]||0)+r.qty;
+  });
+
+  const maxDate=D.reduce((a,r)=>r.date>a?r.date:a,"");
+  const makers=Object.entries(byMaker).map(([k,v])=>({name:k,...v,asins:v.asins.size,stable:v.months.size>=Math.max(4,Math.round(months.length*0.5)),
+    growth: v.p3===0? (v.r3>0?1:0) : (v.r3-v.p3)/v.p3})).sort((a,b)=>b.s-a.s);
+  const prods=Object.entries(byProd).map(([k,v])=>({name:k,...v,months:v.months.size,
+    repeat:v.orders>=2||v.months.size>=2, recent: recent3.includes(v.last.slice(0,7))})).sort((a,b)=>b.u-a.u);
+  const sups=Object.entries(bySup).map(([code,v])=>({code,name:supMap[code]||"未マップ",...v,
+    topMaker:Object.entries(v.makers).sort((a,b)=>b[1]-a[1])[0],
+    topProd:Object.entries(v.prods).sort((a,b)=>b[1]-a[1])[0]})).sort((a,b)=>b.s-a.s);
+
+  // verdict scoring: volume(z) + growth + stability, per maker & standout products
+  const maxU=Math.max(1,...makers.map(m=>m.u));
+  const verMakers=makers.map(m=>{
+    const vol=m.u/maxU, grow=Math.max(-0.5,Math.min(1.5,m.growth)), stab=m.stable?1:0;
+    const score=Math.round((vol*45 + (grow+0.5)/2*40 + stab*15));
+    return {...m,score:Math.max(1,Math.min(99,score))};
+  }).sort((a,b)=>b.score-a.score);
+
+  const monthsArr=months.map(m=>({m,...overall.byMonth[m]}));
+  const best=monthsArr.reduce((a,b)=>b.s>a.s?b:a,monthsArr[0]||{m:"—",s:0});
+  const worst=monthsArr.filter(x=>x.s>0).reduce((a,b)=>b.s<a.s?b:a,best);
+
+  return {D,overall,makers,prods,sups,verMakers,monthsArr,best,worst,maxDate,recent3};
+}
+
+/* ============ SVG month chart ============ */
+function monthChart(monthsArr){
+  const W=560,H=170,padL=8,padR=8,padB=22,padT=12;
+  const iw=W-padL-padR, ih=H-padB-padT;
+  const maxS=Math.max(1,...monthsArr.map(m=>m.s));
+  const maxU=Math.max(1,...monthsArr.map(m=>m.u));
+  const n=monthsArr.length||1, bw=iw/n*0.62, gap=iw/n;
+  let bars="",line="",dots="",labels="";
+  monthsArr.forEach((m,i)=>{
+    const x=padL+gap*i+(gap-bw)/2;
+    const h=ih*(m.s/maxS); const y=padT+ih-h;
+    const cls=m.s===maxS?"mb hi":(m.s< maxS*0.28?"mb lo":"mb");
+    bars+=`<rect class="${cls}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,h).toFixed(1)}" rx="2"><title>${m.m}: ${yen(m.s)} / ${m.u}個</title></rect>`;
+    const cx=padL+gap*i+gap/2, cy=padT+ih-ih*(m.u/maxU);
+    line+=`${cx.toFixed(1)},${cy.toFixed(1)} `;
+    dots+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="2"/>`;
+    labels+=`<text class="axis" x="${cx.toFixed(1)}" y="${H-8}" text-anchor="middle">${m.m.slice(5)}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="月別 売上と個数の推移">
+    ${bars}<polyline points="${line.trim()}"/>${dots}${labels}</svg>`;
+}
+
+/* ============ render ============ */
+function rankRows(items,valFn,fmt,cyan){
+  const max=Math.max(1,...items.map(valFn));
+  return items.map(it=>{
+    const v=valFn(it), w=(v/max*100).toFixed(1);
+    const tag=it.growth!=null?growthPill(it):(it.recent?`<span class="pill new">直近実績</span>`:"");
+    return `<div class="row"><div class="name" title="${esc(it.name)}">${esc(it.name)} ${tag}</div>
+      <div class="val">${fmt(it)}</div><div class="bar ${cyan?"cy":""}"><i style="width:${w}%"></i></div></div>`;
+  }).join("");
+}
+function growthPill(m){
+  if(m.growth>=0.15) return `<span class="pill up">▲ +${Math.round(m.growth*100)}%</span>`;
+  if(m.growth<=-0.15) return `<span class="pill down">▼ ${Math.round(m.growth*100)}%</span>`;
+  return `<span class="pill flat">→ 横ばい</span>`;
+}
+
+function render(){
+  if(!DATA.length)return;
+  const genre=$("genre").value;
+  const suffixN=Math.max(1,Math.min(4,parseInt($("suffixN").value)||2));
+  const supMap=readSupMap();
+  const A=analyze(DATA,genre,suffixN,supMap);
+  $("empty").style.display="none";
+  const rep=$("report"); rep.style.display="block";
+
+  // readout
+  $("roRec").textContent=num(A.D.length);
+  $("roRange").innerHTML = A.monthsArr.length?`${A.monthsArr[0].m}<small> → ${A.monthsArr[A.monthsArr.length-1].m}</small>`:"—";
+  $("roSales").textContent=yenK(A.overall.sales);
+  $("roUnits").textContent=num(A.overall.units);
+  $("genreTag").innerHTML="GENRE&nbsp;·&nbsp;"+(genre.trim()?esc(genre.trim().toUpperCase()):"ALL");
+
+  const avg=A.overall.units?A.overall.sales/A.overall.units:0;
+
+  rep.innerHTML=`
+    <div class="modhead"><span class="no">00</span><h2>全体分析</h2><span class="sub">overall · ${genre.trim()?esc(genre):"全ジャンル"}</span></div><div class="rule"></div>
+    <div class="grid g4" style="margin-top:14px">
+      <div class="card k"><div class="lab">総売上</div><div class="big">${yenK(A.overall.sales)}</div><div class="foot">${num(A.D.length)}注文</div></div>
+      <div class="card k"><div class="lab">総販売個数</div><div class="big">${num(A.overall.units)}<small> 個</small></div><div class="foot">平均単価 ${yen(avg)}</div></div>
+      <div class="card k"><div class="lab">販売ASIN数</div><div class="big">${num(A.overall.asins.size)}</div><div class="foot">商品 ${num(A.overall.products.size)}種</div></div>
+      <div class="card k"><div class="lab">最も売れた月 / 少ない月</div><div class="big" style="font-size:18px">${A.best.m.slice(5)}<small> ↕ </small>${A.worst.m.slice(5)}</div><div class="foot">${yenK(A.best.s)} / ${yenK(A.worst.s)}</div></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h3>月別 売上（棒）と 販売個数（線）の推移</h3>${monthChart(A.monthsArr)}</div>
+
+    <div class="modhead"><span class="no">01</span><h2>メーカー分析</h2><span class="sub">by manufacturer</span></div><div class="rule"></div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><h3>売上ランキング＋直近3か月の伸長</h3><div class="rank">${rankRows(A.makers.slice(0,8),m=>m.s,m=>yenK(m.s))}</div></div>
+      <div class="card"><h3>構成比・安定販売</h3><table><thead><tr><th>メーカー</th><th class="num">比率</th><th class="num">ASIN</th><th>安定</th></tr></thead><tbody>
+        ${A.makers.slice(0,8).map(m=>`<tr><td>${esc(m.name)}</td><td class="num">${(m.s/A.overall.sales*100||0).toFixed(1)}%</td><td class="num">${m.asins}</td><td>${m.stable?'<span class="pill up">通年</span>':'<span class="pill flat">スポット</span>'}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div>
+
+    <div class="modhead"><span class="no">02</span><h2>商品・型番分析</h2><span class="sub">by product / model</span></div><div class="rule"></div>
+    <div class="grid g2" style="margin-top:14px">
+      <div class="card"><h3>販売個数ランキング</h3><div class="rank">${rankRows(A.prods.slice(0,8),p=>p.u,p=>num(p.u)+" 個",true)}</div></div>
+      <div class="card"><h3>リピート/一度きり・直近実績</h3><table><thead><tr><th>型番</th><th class="num">注文</th><th>区分</th></tr></thead><tbody>
+        ${A.prods.slice(0,9).map(p=>`<tr><td title="${esc(p.name)}">${esc(p.name)}</td><td class="num">${p.orders}</td>
+          <td>${p.repeat?'<span class="pill up">リピート</span>':'<span class="pill flat">一度きり</span>'} ${p.recent?'<span class="pill new">直近</span>':''}</td></tr>`).join("")}
+      </tbody></table></div>
+    </div>
+
+    <div class="modhead"><span class="no">03</span><h2>仕入先分析</h2><span class="sub">SKU末尾 ${suffixN} 文字で判別</span></div><div class="rule"></div>
+    <div class="card" style="margin-top:14px"><table><thead><tr><th>コード</th><th>仕入先</th><th class="num">売上</th><th class="num">個数</th><th>売れ筋メーカー</th><th>売れ筋型番</th></tr></thead><tbody>
+      ${A.sups.map(s=>`<tr><td><span class="sku">…<b>${esc(s.code)}</b></span></td><td>${esc(s.name)}</td>
+        <td class="num">${yenK(s.s)}</td><td class="num">${num(s.u)}</td>
+        <td>${s.topMaker?esc(s.topMaker[0]):"—"}</td><td title="${s.topProd?esc(s.topProd[0]):''}">${s.topProd?esc(s.topProd[0]):"—"}</td></tr>`).join("")}
+    </tbody></table></div>
+
+    <div class="modhead"><span class="no">04</span><h2>仕入れ判断</h2><span class="sub">restock priority · 実績＋伸長＋安定でスコア化</span></div><div class="rule"></div>
+    <div class="verdict" style="margin-top:14px">
+      ${A.verMakers.slice(0,4).map(m=>{
+        const why=[];
+        if(m.growth>=0.15)why.push(`直近3か月 +${Math.round(m.growth*100)}%と伸長`);
+        else if(m.growth<=-0.15)why.push(`直近は${Math.round(m.growth*100)}%と減速`);
+        else why.push("販売は横ばい");
+        if(m.stable)why.push("通年で安定販売");
+        why.push(`累計 ${num(m.u)}個 / ${yenK(m.s)}`);
+        return `<div class="score"><div class="top"><span class="mk">${esc(m.name)}</span><span class="pill ${m.growth>=0.15?'up':m.growth<=-0.15?'down':'flat'}">${m.growth>=0.15?'優先':m.growth<=-0.15?'様子見':'維持'}</span></div>
+          <div class="nm">${esc(m.name)} — 重点リサーチ候補</div>
+          <div class="why">${esc(why.join(" ／ "))}</div>
+          <div class="meter"><div class="track"><i style="width:${m.score}%"></i></div><div class="s">${m.score}<small>/99</small></div></div></div>`;
+      }).join("")}
+    </div>
+    <div class="note">◭ これは提案用デモです（型Cデモ / CW 13301954）。ダミーのPCパーツ販売データで動作を示しています。<br>
+      本番は御社の「全注文レポート」実データに接続し、SKU末尾コード→仕入先マップ・メーカー抽出ルールを実運用に合わせて調整します。分析項目の追加は納品後にClaudeへ指示するだけで拡張できます。</div>
+  `;
+  // subtle flash on readout update
+  $("readout").classList.remove("flash"); void $("readout").offsetWidth; $("readout").classList.add("flash");
+}
+
+/* ============ supplier map UI ============ */
+function buildSupMap(){
+  const box=$("supMap"); box.innerHTML="";
+  Object.entries(SUPPLIERS).forEach(([code,name])=>{
+    const row=el("div","maprow");
+    row.innerHTML=`<input class="field code" value="${code}" maxlength="4" aria-label="コード"><input class="field name" value="${esc(name)}" aria-label="仕入先名">`;
+    box.appendChild(row);
+  });
+  box.addEventListener("input",()=>{ if(DATA.length)render(); });
+}
+function readSupMap(){
+  const map={};
+  $("supMap").querySelectorAll(".maprow").forEach(r=>{
+    const c=r.querySelector(".code").value.trim().toUpperCase(); const n=r.querySelector(".name").value.trim();
+    if(c)map[c]=n;
+  });
+  return map;
+}
+
+/* ============ wiring ============ */
+function setData(rows,label){ DATA=rows; render(); }
+$("loadSample").addEventListener("click",()=>{ setData(genDataset(),"sample"); });
+$("genre").addEventListener("input",()=>{ syncChips(); if(DATA.length)render(); });
+$("suffixN").addEventListener("input",()=>{ if(DATA.length)render(); });
+
+function syncChips(){
+  const v=$("genre").value.trim();
+  document.querySelectorAll("#genreChips .chip").forEach(c=>c.setAttribute("aria-pressed", String(c.dataset.g===v)));
+}
+document.querySelectorAll("#genreChips .chip").forEach(c=>{
+  c.addEventListener("click",()=>{ $("genre").value=c.dataset.g; syncChips(); if(DATA.length)render(); });
+});
+
+// paste
+$("pasteToggle").addEventListener("click",()=>{
+  const t=$("paste"); const show=t.style.display==="none";
+  t.style.display=show?"block":"none"; $("pasteToggle").textContent=show?"↑ この内容で取り込む":"貼り付けで取り込む";
+  if(!show && t.value.trim()){ try{ setData(parseReport(t.value),"paste"); }catch(e){ alert("取り込みエラー: "+e.message); } }
+});
+// file + drop
+const drop=$("drop"), file=$("file");
+drop.addEventListener("click",()=>file.click());
+file.addEventListener("change",e=>{ const f=e.target.files[0]; if(f)readFile(f); });
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("hot");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("hot");}));
+drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f)readFile(f); });
+function readFile(f){ const rd=new FileReader(); rd.onload=()=>{ try{ setData(parseReport(rd.result),"file"); }catch(err){ alert("取り込みエラー: "+err.message);} }; rd.readAsText(f); }
+
+buildSupMap();
+syncChips();
+</script>
+</body>
+</html>
