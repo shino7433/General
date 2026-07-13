@@ -14,8 +14,14 @@ function onOpen() {
 function firstRunSetup() {
   setup();
   installDailyTrigger();
-  var res = sendTestNotification();
-  SpreadsheetApp.getUi().alert('初回セットアップ完了: ' + res);
+  try {
+    var res = sendTestNotification();
+    SpreadsheetApp.getUi().alert('初回セットアップ完了: ' + res);
+  } catch (e) {
+    SpreadsheetApp.getUi().alert(
+      'シートを準備しました。「設定」シートに通知先（Slack Webhook URL、またはLINEトークン＋userId）を入力してから、メニュー→テスト送信 を押してください。\n' + e.message
+    );
+  }
 }
 
 function setup() {
@@ -34,10 +40,46 @@ function setup() {
       ['送信オフセット', '7,1,0'],
       ['超過アラート(ON/OFF)', 'ON'],
       ['1回の送信上限', '50'],
+      ['実行時刻(0-23)', '8'],
       ['差出人名', ''],
     ];
     cfg.getRange(1, 1, rows.length, 2).setValues(rows);
   }
+  applyValidations_(ss);
+  ensureSampleRow_(ss);
+}
+
+function applyValidations_(ss) {
+  var dataSh = ss.getSheetByName(DATA_SHEET);
+  var lastRow = Math.max(dataSh.getMaxRows(), 2);
+  var checkboxRule = SpreadsheetApp.newDataValidation().requireCheckbox().build();
+  dataSh.getRange(2, 4, lastRow - 1, 1).setDataValidation(checkboxRule);
+
+  var cfgSh = ss.getSheetByName(CONFIG_SHEET);
+  var channelRow = findConfigRow_(cfgSh, '通知先(slack/line)');
+  if (channelRow) {
+    var channelRule = SpreadsheetApp.newDataValidation().requireValueInList(['slack', 'line']).build();
+    cfgSh.getRange(channelRow, 2).setDataValidation(channelRule);
+  }
+}
+
+function findConfigRow_(cfgSh, label) {
+  var last = cfgSh.getLastRow();
+  if (last < 2) return null;
+  var vals = cfgSh.getRange(2, 1, last - 1, 1).getValues();
+  for (var i = 0; i < vals.length; i++) {
+    if (String(vals[i][0]).trim() === label) return i + 2;
+  }
+  return null;
+}
+
+function ensureSampleRow_(ss) {
+  var dataSh = ss.getSheetByName(DATA_SHEET);
+  if (dataSh.getLastRow() >= 2) return;
+  var today = new Date();
+  dataSh.getRange(2, 1, 1, 7).setValues([[
+    today, '（例）請求書送付', '{件名} の期限は {期限日}（残り{残り日数}日）です', true, '', '', '記入例。不要なら削除してください',
+  ]]);
 }
 
 function ensureSheet(ss, name, headers) {
@@ -63,8 +105,15 @@ function readConfig() {
     offsets: parseOffsets(map['送信オフセット'] || '7,1,0'),
     overdueAlert: /^on$/i.test(map['超過アラート(ON/OFF)'] || 'ON'),
     sendCap: Number(map['1回の送信上限'] || '50'),
+    runHour: normalizeRunHour_(map['実行時刻(0-23)']),
     senderName: map['差出人名'] || '',
   };
+}
+
+function normalizeRunHour_(raw) {
+  var n = Number(raw);
+  if (!Number.isFinite(n) || n < 0 || n > 23) return 8;
+  return n;
 }
 
 function readRows() {
@@ -105,8 +154,9 @@ function onTimeTrigger() {
 }
 
 function notify(config, message) {
+  if (config.channel === 'slack') return sendViaSlack(config, message);
   if (config.channel === 'line') return sendViaLine(config, message);
-  return sendViaSlack(config, message);
+  throw new Error('通知先(slack/line)が未設定または不正です: "' + config.channel + '"');
 }
 
 function sendViaSlack(config, message) {
@@ -151,7 +201,8 @@ function installDailyTrigger() {
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'onTimeTrigger') ScriptApp.deleteTrigger(t);
   });
-  ScriptApp.newTrigger('onTimeTrigger').timeBased().everyDays(1).atHour(8).create();
+  var config = readConfig();
+  ScriptApp.newTrigger('onTimeTrigger').timeBased().everyDays(1).atHour(config.runHour).create();
 }
 
 function sendTestNotification() {
