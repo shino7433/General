@@ -41,6 +41,23 @@ function parseEmail(email) {
   });
 }
 
+// 検索結果ページから拾った生データ（jobId必須、他は任意）を parseEmail と同じ形のレコードへ正規化する。
+// メール由来のスカウトと別に、保存検索の直接取り込み分は sourceType を「保存検索」既定にする。
+function normalizeJobRecords(jobs) {
+  var out = [];
+  (jobs || []).forEach(function (j) {
+    var id = String((j && j.jobId != null ? j.jobId : '')).trim();
+    if (!/^\d+$/.test(id)) return;
+    out.push({
+      jobId: id,
+      url: (j && j.url) || 'https://crowdworks.jp/public/jobs/' + id,
+      title: (j && j.title) || '',
+      sourceType: (j && j.sourceType) || '保存検索',
+    });
+  });
+  return out;
+}
+
 function computeNewRows(records, existingIds, now) {
   var seen = {};
   (existingIds || []).forEach(function (id) { seen[String(id)] = true; });
@@ -60,6 +77,7 @@ if (typeof module !== 'undefined') {
     cleanTitle: cleanTitle,
     detectSourceType: detectSourceType,
     parseEmail: parseEmail,
+    normalizeJobRecords: normalizeJobRecords,
     computeNewRows: computeNewRows,
   };
 }

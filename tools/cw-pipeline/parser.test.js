@@ -83,3 +83,42 @@ test('computeNewRows: 既存IDとバッチ内重複を除外し列A〜Jの行を
 test('computeNewRows: 全て既存なら空', () => {
   assert.deepStrictEqual(computeNewRows(recs, ['111', '222'], 'now'), []);
 });
+
+const { normalizeJobRecords } = require('./parser.js');
+
+test('normalizeJobRecords: 全項目そろった検索結果はそのままレコード化', () => {
+  const jobs = [{ jobId: '13300001', title: 'GAS自動化案件', url: 'https://crowdworks.jp/public/jobs/13300001', sourceType: '保存検索' }];
+  assert.deepStrictEqual(normalizeJobRecords(jobs), [
+    { jobId: '13300001', url: 'https://crowdworks.jp/public/jobs/13300001', title: 'GAS自動化案件', sourceType: '保存検索' },
+  ]);
+});
+
+test('normalizeJobRecords: url未指定なら jobId から生成', () => {
+  const jobs = [{ jobId: '13300002', title: 'A案件' }];
+  assert.deepStrictEqual(normalizeJobRecords(jobs), [
+    { jobId: '13300002', url: 'https://crowdworks.jp/public/jobs/13300002', title: 'A案件', sourceType: '保存検索' },
+  ]);
+});
+
+test('normalizeJobRecords: sourceType未指定は「保存検索」を既定にする', () => {
+  assert.strictEqual(normalizeJobRecords([{ jobId: '13300003', title: 'B' }])[0].sourceType, '保存検索');
+});
+
+test('normalizeJobRecords: jobIdが数字でない/空のレコードは除外', () => {
+  const jobs = [
+    { jobId: '13300004', title: 'OK' },
+    { jobId: 'abc', title: 'NG英字' },
+    { jobId: '', title: 'NG空' },
+    { title: 'NGなし' },
+  ];
+  assert.deepStrictEqual(normalizeJobRecords(jobs).map(function (r) { return r.jobId; }), ['13300004']);
+});
+
+test('normalizeJobRecords: 数値jobIdは文字列化して扱う', () => {
+  assert.strictEqual(normalizeJobRecords([{ jobId: 13300005, title: 'C' }])[0].jobId, '13300005');
+});
+
+test('normalizeJobRecords: null/未定義入力は空配列', () => {
+  assert.deepStrictEqual(normalizeJobRecords(null), []);
+  assert.deepStrictEqual(normalizeJobRecords(undefined), []);
+});

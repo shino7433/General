@@ -6,7 +6,8 @@ description: CW評価ループを1回実行（未判定案件をChromeで閲覧�
 
 手順:
 1. `cd /Users/shinodzukakazuki/Documents/Claude/general` で作業。`set -a; . tools/cw-pipeline/.secrets/api.env; set +a` で `CW_API_URL`/`CW_API_TOKEN` を読み込み、RUNBOOKの `cwget`/`cwpost` シェル関数を定義する。
-2. `cwget` で未判定案件を取得。**0件なら「新着なし」と報告して終了**（何も書き込まない）。
+2. **手順0（収集）**: 保存検索3条件（GAS/スプシ自動化/Claude）の新着順ページを claude-in-chrome で開き、jobId・タイトルを抽出して `action:"ingest"` でシートに追記（メール非依存の本命入口）。RUNBOOK「手順0」参照。
+3. `cwget` で未判定案件を取得。**0件なら「新着なし」と報告して終了**（何も書き込まない）。
 3. 各案件を claude-in-chrome で `url` を開き**閲覧のみ**で評価（[crowdworks.md](../../docs/crowdworks.md) §2/§4/§5/§7 ＋ [freelance.md](../../docs/freelance.md) §4）。見積は `evaluate/estimate.js` のレンジを使う。
 4. `cwpost` でE/F/G・J〜（Go時はP）を書き戻す。Go案件のドラフト正本は `docs/proposals/YYYY-MM-DD-<案件>.md` に保存。
 5. Go案件があれば `docs/proposals/` を日本語コミット＆push。最後に「Go n件 / No-Go m件」を要約し、確認用ダッシュボードURL（`$CW_API_URL?view=summary&token=$CW_API_TOKEN`）を案内する。

@@ -16,7 +16,7 @@ set -a; . tools/cw-pipeline/.secrets/api.env; set +a
 # 未判定取得
 cwget() { curl -s -L "$CW_API_URL?token=$CW_API_TOKEN&view=pending"; }
 
-# 評価書き戻し（302のlocationを拾ってGETで本文を読む）
+# 評価書き戻し / 収集追記（302のlocationを拾ってGETで本文を読む）
 cwpost() {
   local loc
   loc=$(curl -s -o /dev/null -w '%{redirect_url}' -X POST "$CW_API_URL" \
@@ -24,7 +24,26 @@ cwpost() {
   curl -s "$loc"
 }
 ```
-- 成功は `{"ok":true,"updatedRow":N}`。`{"error":"forbidden"}`＝トークン不一致、`{"error":"not_found","jobId":".."}`＝案件ID不在。
+- 評価書き戻しの成功は `{"ok":true,"updatedRow":N}`。`{"error":"forbidden"}`＝トークン不一致、`{"error":"not_found","jobId":".."}`＝案件ID不在。
+- 収集追記（`action:"ingest"`）の成功は `{"ok":true,"appended":N}`（重複jobIdは自動除外なので N=0 は「新規なし」）。
+
+## 手順0: 保存検索の直接収集（メール非依存・本命の入口）
+CWの「検索条件を保存」は**新着メールを送らない**ため、メール収集だけでは良質な新着案件がシートに入らない（詳細は本ファイル末尾の背景メモ）。そこで評価の前に、保存検索3条件の結果ページをローカルChromeで開いて案件を直接取り込む。
+
+1. 保存条件（[job_offer_user_search_criteria_settings](https://crowdworks.jp/job_offer_user_search_criteria_settings) の3件）に対応する新着順検索を claude-in-chrome で開く:
+   - GAS: `https://crowdworks.jp/public/jobs/search?order=new&search[keywords]=Google Apps Script`
+   - スプシ自動化: `.../search?order=new&search[keywords]=スプレッドシート 自動化`
+   - Claude: `.../search?order=new&search[keywords]=Claude`
+2. 各結果カードから **jobId（URL `/public/jobs/<id>` の数字）・タイトル** を抽出。**閲覧のみ**（応募・保存はしない）。募集終了カードは除く。
+3. まとめて1回 `cwpost` で ingest（`sourceType` は省略可＝「保存検索」既定）:
+   ```bash
+   cwpost '{"token":"'"$CW_API_TOKEN"'","action":"ingest","jobs":[
+     {"jobId":"13300001","title":"…"},
+     {"jobId":"13300002","title":"…"}
+   ]}'
+   ```
+   `{"ok":true,"appended":N}` を確認。これで新規案件が `未判定` でシートに入る。
+4. 続けて下記「手順1〜」の評価ループへ（`cwget` で未判定＝今入れた分＋メール由来を取得して評価）。
 
 ## 手順
 1. **未判定取得**: `cwget` → 案件配列 `[{jobId,url,title,sourceType,row}]`。0件なら終了。
@@ -56,3 +75,9 @@ cwpost() {
 - CW上の応募・送信・メッセージを**一切しない**。書き込み先は自分のシート/リポジトリのみ。
 - 人間ペース。1日の未判定は通常一桁。
 - 出先確認用ダッシュボード（スマホでブックマーク）: `"$CW_API_URL?view=summary&token=$CW_API_TOKEN"`。
+
+## 背景メモ: なぜ手順0（直接収集）が必要か（2026-07-12 調査で判明）
+- メール収集パイプライン（毎時 `collectCwJobs`）は**正常稼働**していたが、7/6以降シートに新規行が増えていなかった。
+- 原因は転記の故障ではなく**入口の枯れ**: パイプラインが拾うのは「`from:no-reply@crowdworks.jp` かつ本文に `/public/jobs/` URL」のメールのみ。7日間で該当したのは低質スカウト2件とアカウント通知だけ。
+- 一方でCWの検索では「GAS/スプシ自動化」新着案件が実在（固定66万のGAS×Claude案件など）。だが**CWの「検索条件を保存」は新着メールを送らない**（保存検索設定ページに通知トグルなし）。案件入りメールは不定期スカウトと別アドレスの「おススメ」ダイジェストのみで、前者は低質・後者は`no-reply@`フィルタで除外。
+- 結論: メール依存では本命の新着案件が入ってこない。ログイン済みローカルChromeで検索結果ページを直接読み、`action:"ingest"` でシートに入れるのが確実。手順0はそのための収集ステップ。

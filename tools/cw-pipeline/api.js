@@ -51,6 +51,14 @@ function doPost(e) {
   if (!_tokenOk(body.token)) return _json({ error: 'forbidden' });
   var sheet = _sheet();
   var rows = _dataRows(sheet);
+  // 保存検索の直接取り込み: ローカルClaudeが検索結果ページから拾った案件を新規追記（重複はjobIdで排除）。
+  if (body.action === 'ingest') {
+    var existingIds = rows.map(function (r) { return String(r[0]); });
+    var nowStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+    var newRows = computeNewRows(normalizeJobRecords(body.jobs || []), existingIds, nowStr);
+    newRows.forEach(function (row) { sheet.appendRow(row); });
+    return _json({ ok: true, appended: newRows.length });
+  }
   var idCol = rows.map(function (r) { return String(r[0]); });
   var idx = findRowByJobId(idCol, String(body.jobId));
   if (idx < 0) return _json({ error: 'not_found', jobId: body.jobId });
