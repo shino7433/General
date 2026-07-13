@@ -47,3 +47,14 @@ test('markSentState: 新規ラベルを追記', () => {
 test('markSentState: 既存ラベルは重複させない（冪等）', () => {
   assert.strictEqual(markSentState('-7 0', '-7'), '-7 0');
 });
+
+const { buildSlackPayload, buildLinePayload } = require('./core.js');
+
+test('buildSlackPayload: textに本文を入れる', () => {
+  assert.deepStrictEqual(buildSlackPayload('期限です'), { text: '期限です' });
+});
+test('buildLinePayload: to と messages を組む', () => {
+  assert.deepStrictEqual(buildLinePayload('期限です', 'U123'), {
+    to: 'U123', messages: [{ type: 'text', text: '期限です' }],
+  });
+});

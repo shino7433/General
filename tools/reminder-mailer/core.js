@@ -30,6 +30,13 @@ function markSentState(cell, label) {
   return arr.join(' ');
 }
 
+function buildSlackPayload(message) {
+  return { text: String(message) };
+}
+function buildLinePayload(message, userId) {
+  return { to: String(userId), messages: [{ type: 'text', text: String(message) }] };
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate, parseSentState: parseSentState, markSentState: markSentState };
+  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate, parseSentState: parseSentState, markSentState: markSentState, buildSlackPayload: buildSlackPayload, buildLinePayload: buildLinePayload };
 }
