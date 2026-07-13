@@ -93,3 +93,9 @@ test('selectDue: 無効行と不正日付はスキップ', () => {
   const bad = selectDue([row({ dueDate: new Date('invalid') })], new Date(2026, 6, 13), baseConfig);
   assert.deepStrictEqual(bad, []);
 });
+
+test('selectDue: 出力に dueDate を含む（{期限日}差し込み用）', () => {
+  const due = new Date(2026, 6, 20);
+  const out = selectDue([row({ dueDate: due })], new Date(2026, 6, 13), baseConfig);
+  assert.strictEqual(out[0].dueDate.getTime(), due.getTime());
+});

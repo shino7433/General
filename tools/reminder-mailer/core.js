@@ -53,7 +53,7 @@ function selectDue(rows, today, config) {
       label = '超過';
     }
     if (label && sent.indexOf(label) === -1) {
-      out.push({ index: r.index, subject: r.subject, body: r.body, offsetLabel: label, daysUntilDue: d });
+      out.push({ index: r.index, subject: r.subject, body: r.body, offsetLabel: label, daysUntilDue: d, dueDate: r.dueDate });
     }
   });
   return out;
