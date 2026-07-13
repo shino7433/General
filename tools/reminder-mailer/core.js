@@ -37,6 +37,28 @@ function buildLinePayload(message, userId) {
   return { to: String(userId), messages: [{ type: 'text', text: String(message) }] };
 }
 
+function selectDue(rows, today, config) {
+  config = config || {};
+  var offsets = config.offsets || [];
+  var out = [];
+  (rows || []).forEach(function (r) {
+    if (!r || r.enabled === false) return;
+    if (!(r.dueDate instanceof Date) || isNaN(r.dueDate.getTime())) return;
+    var d = daysUntilDue(today, r.dueDate);
+    var sent = parseSentState(r.sentState);
+    var label = null;
+    if (d >= 0) {
+      if (offsets.indexOf(d) !== -1) label = (d === 0 ? '0' : '-' + d);
+    } else if (config.overdueAlert) {
+      label = '超過';
+    }
+    if (label && sent.indexOf(label) === -1) {
+      out.push({ index: r.index, subject: r.subject, body: r.body, offsetLabel: label, daysUntilDue: d });
+    }
+  });
+  return out;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate, parseSentState: parseSentState, markSentState: markSentState, buildSlackPayload: buildSlackPayload, buildLinePayload: buildLinePayload };
+  module.exports = { parseOffsets: parseOffsets, daysUntilDue: daysUntilDue, renderTemplate: renderTemplate, parseSentState: parseSentState, markSentState: markSentState, buildSlackPayload: buildSlackPayload, buildLinePayload: buildLinePayload, selectDue: selectDue };
 }

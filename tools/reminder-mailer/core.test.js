@@ -58,3 +58,38 @@ test('buildLinePayload: to と messages を組む', () => {
     to: 'U123', messages: [{ type: 'text', text: '期限です' }],
   });
 });
+
+const { selectDue } = require('./core.js');
+
+const baseConfig = { offsets: [7, 1, 0], overdueAlert: true };
+function row(over) {
+  return Object.assign({ index: 2, dueDate: new Date(2026, 6, 20), subject: '件名', body: '本文', enabled: true, sentState: '' }, over);
+}
+
+test('selectDue: オフセット一致で発火（7日前→-7）', () => {
+  const out = selectDue([row({ dueDate: new Date(2026, 6, 20) })], new Date(2026, 6, 13), baseConfig);
+  assert.strictEqual(out.length, 1);
+  assert.strictEqual(out[0].offsetLabel, '-7');
+});
+test('selectDue: 当日は0ラベル', () => {
+  const out = selectDue([row({ dueDate: new Date(2026, 6, 13) })], new Date(2026, 6, 13), baseConfig);
+  assert.strictEqual(out[0].offsetLabel, '0');
+});
+test('selectDue: 送信済みオフセットは発火しない', () => {
+  const out = selectDue([row({ dueDate: new Date(2026, 6, 20), sentState: '-7' })], new Date(2026, 6, 13), baseConfig);
+  assert.deepStrictEqual(out, []);
+});
+test('selectDue: 超過はoverdueAlert時に一度だけ', () => {
+  const on = selectDue([row({ dueDate: new Date(2026, 6, 10) })], new Date(2026, 6, 13), baseConfig);
+  assert.strictEqual(on[0].offsetLabel, '超過');
+  const already = selectDue([row({ dueDate: new Date(2026, 6, 10), sentState: '超過' })], new Date(2026, 6, 13), baseConfig);
+  assert.deepStrictEqual(already, []);
+  const off = selectDue([row({ dueDate: new Date(2026, 6, 10) })], new Date(2026, 6, 13), { offsets: [7, 1, 0], overdueAlert: false });
+  assert.deepStrictEqual(off, []);
+});
+test('selectDue: 無効行と不正日付はスキップ', () => {
+  const disabled = selectDue([row({ enabled: false })], new Date(2026, 6, 13), baseConfig);
+  assert.deepStrictEqual(disabled, []);
+  const bad = selectDue([row({ dueDate: new Date('invalid') })], new Date(2026, 6, 13), baseConfig);
+  assert.deepStrictEqual(bad, []);
+});
