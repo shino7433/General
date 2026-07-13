@@ -75,7 +75,9 @@ function findConfigRow_(cfgSh, label) {
 
 function ensureSampleRow_(ss) {
   var dataSh = ss.getSheetByName(DATA_SHEET);
-  if (dataSh.getLastRow() >= 2) return;
+  // 有効列のチェックボックス検証を入れるとD列に値(FALSE)が入り getLastRow が膨らむため、
+  // 期限日(A2)の空判定でサンプル有無を見る（getLastRow は当てにしない）。
+  if (!dataSh.getRange(2, 1).isBlank()) return;
   var today = new Date();
   dataSh.getRange(2, 1, 1, 7).setValues([[
     today, '（例）請求書送付', '{件名} の期限は {期限日}（残り{残り日数}日）です', true, '', '', '記入例。不要なら削除してください',
