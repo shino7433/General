@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>メルカリ出品 → X自動告知｜ご提案の補足資料</title>
+<style>
+  :root{
+    --paper:#EDF0F6;
+    --card:#FBFCFE;
+    --ink:#12141C;
+    --frame:#20305F;
+    --slate:#5C6480;
+    --line:#D5DAE6;
+    --gold:#B8912F;
+    --blue:#1D9BF0;     /* Xのリンク色 */
+    --ok:#1B9E63;
+    --warn:#C7862B;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --jp:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",YuGothic,"Noto Sans JP",sans-serif;
+    --mincho:"Hiragino Mincho ProN","Yu Mincho",YuMincho,serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--jp);line-height:1.75;
+    font-feature-settings:"palt" 1;letter-spacing:.01em;
+    background-image:radial-gradient(1200px 500px at 80% -10%, rgba(123,108,246,.10), transparent 60%),
+                     radial-gradient(900px 400px at -10% 20%, rgba(75,227,211,.08), transparent 55%);
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 22px 84px}
+
+  /* --- foil / holo --- */
+  .foil{
+    background:linear-gradient(115deg,#4BE3D3 0%,#54B6F0 26%,#7A6CF6 48%,#F45CAB 72%,#F5C24B 100%);
+    background-size:220% 220%;
+  }
+  @keyframes sheen{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+  @media (prefers-reduced-motion:no-preference){
+    .foil-anim{animation:sheen 7s linear infinite}
+  }
+
+  /* --- top ribbon --- */
+  .ribbon{height:6px}
+  .eyebrow{
+    font-family:var(--mincho);color:var(--gold);font-size:13px;letter-spacing:.32em;
+    text-transform:none;margin:34px 0 0;font-weight:600;
+  }
+
+  /* --- hero --- */
+  header.hero{padding:6px 0 8px}
+  h1{
+    font-size:clamp(30px,5.6vw,52px);line-height:1.14;letter-spacing:-.01em;
+    font-weight:800;margin:.32em 0 .1em;
+  }
+  h1 .hl{
+    background:linear-gradient(180deg,transparent 62%, rgba(75,227,211,.55) 62%);
+    padding:0 .05em;
+  }
+  .lead{font-size:clamp(15px,2.2vw,18px);color:var(--slate);max-width:40em;margin:.4em 0 0}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:30px;align-items:center;margin-top:26px}
+  @media (max-width:720px){.hero-grid{grid-template-columns:1fr;gap:22px}}
+
+  /* --- X post mock --- */
+  .xpost{
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 16px 12px;
+    box-shadow:0 18px 40px -22px rgba(32,48,95,.5);
+  }
+  .xhead{display:flex;gap:11px;align-items:center}
+  .avatar{width:42px;height:42px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px}
+  .xname{font-weight:700;font-size:15px;line-height:1.2}
+  .xhandle{color:var(--slate);font-size:13px}
+  .xbody{font-size:15px;margin:11px 2px 12px;line-height:1.6}
+  .tag{color:var(--blue);font-weight:600}
+  .xcard{display:flex;gap:12px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+  .xthumb{width:96px;flex:0 0 auto;position:relative;border-right:1px solid var(--line)}
+  .xthumb::after{content:"◈";position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.9);font-size:26px}
+  .xmeta{padding:10px 12px}
+  .xmeta .p{font-family:var(--mono);font-weight:700;font-size:17px}
+  .xmeta .s{color:var(--slate);font-size:12.5px;margin-top:2px}
+  .xactions{display:flex;gap:26px;color:var(--slate);font-size:13px;margin:11px 4px 2px}
+
+  /* --- section scaffold --- */
+  section{margin-top:56px}
+  .khead{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  .knum{font-family:var(--mono);font-weight:700;color:var(--frame);font-size:14px;
+    border:1.5px solid var(--frame);border-radius:7px;padding:2px 9px;flex:0 0 auto}
+  h2{font-size:clamp(21px,3.2vw,27px);font-weight:800;margin:0;letter-spacing:-.005em}
+  .ksub{color:var(--slate);margin:.3em 0 22px;font-size:15px}
+
+  /* --- flow strip --- */
+  .flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);
+    border:1px solid var(--line);border-radius:16px;padding:18px 20px}
+  .node{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14.5px}
+  .dot{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;flex:0 0 auto;font-size:17px;color:#fff}
+  .arrow{color:var(--frame);font-weight:800;opacity:.55;font-size:18px}
+  .flow .muted{color:var(--slate);font-weight:600}
+
+  /* --- option cards --- */
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:720px){.opts{grid-template-columns:1fr}}
+  .oc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:2px}
+  .oc-inner{border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;height:100%}
+  .oc .rec{position:absolute;top:-11px;right:14px;z-index:2;color:#0b0b12;font-weight:800;font-size:11.5px;
+    letter-spacing:.12em;padding:4px 11px;border-radius:999px;box-shadow:0 6px 16px -8px rgba(123,108,246,.8)}
+  .oc-code{display:flex;align-items:center;gap:9px}
+  .badge{font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;background:var(--frame);
+    border-radius:7px;padding:2px 9px}
+  .oc h3{font-size:17px;margin:12px 0 2px;font-weight:800}
+  .oc p.desc{font-size:14px;color:var(--slate);margin:.35em 0 14px;min-height:2.6em}
+  .miniflow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px;font-weight:700;margin-bottom:16px}
+  .chip{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:5px 9px}
+  .chip.you{border-color:#B9E9E2;background:#E7FbF8}
+  .chip.auto{border-color:#CFC9Fb;background:#EFEcFe}
+  .spec{list-style:none;margin:0;padding:0;border-top:1px dashed var(--line)}
+  .spec li{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .spec .k{color:var(--slate)}
+  .spec .v{font-weight:700;text-align:right}
+  .rate{font-family:var(--mono);font-weight:700}
+  .g{color:var(--ok)} .a{color:var(--warn)}
+
+  /* --- signature recommend card --- */
+  .pick{position:relative;border-radius:22px;padding:3px;margin-top:8px}
+  .pick-inner{background:#0E1330;border-radius:19px;padding:26px 26px 24px;color:#EEF1FB;overflow:hidden;position:relative}
+  .pick-inner::before{content:"";position:absolute;inset:0;opacity:.16;
+    background:linear-gradient(115deg,#4BE3D3,#7A6CF6 45%,#F45CAB 75%,#F5C24B);background-size:200% 200%}
+  .pick .tagfoil{position:relative;font-family:var(--mincho);letter-spacing:.28em;font-size:12px;color:#CFe;opacity:.9}
+  .pick h3{position:relative;font-size:clamp(20px,3.4vw,26px);margin:.3em 0 .1em;font-weight:800;color:#fff}
+  .combo{position:relative;display:flex;gap:10px;align-items:center;font-family:var(--mono);font-weight:700;margin:14px 0 6px;flex-wrap:wrap}
+  .combo .cc{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:9px;padding:5px 11px;font-size:14px}
+  .combo .x{opacity:.7}
+  .pick p{position:relative;color:#C6CDE8;font-size:14.5px;margin:.6em 0 0;max-width:46em}
+  .pill3{position:relative;display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .pill3 span{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:999px;
+    padding:6px 13px;font-size:13px;font-weight:700}
+  .pill3 b{color:#68F0DE}
+
+  /* --- sample posts grid --- */
+  .samples{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:720px){.samples{grid-template-columns:1fr}}
+  .sp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .sp .tagline{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--frame);margin-bottom:8px}
+  .sp .tag-sold{color:var(--ok)} .sp .tag-down{color:var(--warn)}
+  .sp .txt{font-size:13.5px;line-height:1.6}
+
+  /* --- deliver / how / price --- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  @media (max-width:720px){.grid3{grid-template-columns:1fr}}
+  .blk{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .blk .lab{font-family:var(--mincho);color:var(--gold);letter-spacing:.2em;font-size:12px;margin-bottom:8px}
+  .blk ul{margin:0;padding-left:1.1em;font-size:14px}
+  .blk li{margin:.3em 0}
+  .price{font-family:var(--mono);font-weight:700;font-size:26px}
+  .price small{font-size:13px;color:var(--slate);font-weight:400;font-family:var(--jp)}
+  .note{font-size:12.5px;color:var(--slate);margin-top:8px}
+
+  /* --- close --- */
+  .close{margin-top:52px;background:var(--card);border:1px solid var(--line);border-radius:18px;
+    padding:26px 24px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+  .close .msg{max-width:34em}
+  .close h4{margin:0 0 .3em;font-size:19px;font-weight:800}
+  .close p{margin:0;color:var(--slate);font-size:14.5px}
+  .askrow{display:flex;gap:10px;flex-wrap:wrap}
+  .ask{font-family:var(--mono);font-weight:700;font-size:13px;border:1.5px solid var(--frame);color:var(--frame);
+    border-radius:9px;padding:7px 12px;background:#fff}
+  footer.sig{margin-top:26px;color:var(--slate);font-size:12.5px;text-align:center}
+
+  /* --- print / PDF --- */
+  @page{margin:14mm 12mm}
+  @media print{
+    body{background:#fff !important;background-image:none !important}
+    .wrap{max-width:none;padding:0}
+    .foil-anim{animation:none !important}
+    section{margin-top:30px;break-inside:avoid}
+    .opts,.samples,.grid3{break-inside:avoid}
+    .oc,.sp,.blk,.pick,.close,.flow,.xpost{break-inside:avoid}
+    .pick-inner{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    header.hero{break-after:avoid}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+<div class="ribbon foil foil-anim"></div>
+<div class="wrap">
+
+  <p class="eyebrow">ご提案の補足資料 ・ メルカリ × X 自動連携</p>
+
+  <header class="hero">
+    <div class="hero-grid">
+      <div>
+        <h1>出品したら、<br><span class="hl">Xが勝手に告知</span>してくれる。</h1>
+        <p class="lead">トレカの出品数が増えても、告知の手間はゼロに。実現方法は<strong>2つの選択</strong>で決まります。この資料でイメージを掴んでいただければ、ご返信からそのまま設計に入れます。</p>
+      </div>
+      <div class="xpost" aria-label="Xへの投稿イメージ">
+        <div class="xhead">
+          <div class="avatar foil">T</div>
+          <div>
+            <div class="xname">トレカ出品アカウント</div>
+            <div class="xhandle">@your_shop ・ 自動投稿</div>
+          </div>
+        </div>
+        <div class="xbody">🔥新入荷！<br>青眼の白龍 レリーフ 美品 ¥18,000<br><span class="tag">#トレカ #遊戯王 #メルカリ</span></div>
+        <div class="xcard">
+          <div class="xthumb foil"></div>
+          <div class="xmeta">
+            <div class="p">¥18,000</div>
+            <div class="s">メルカリ ・ 商品ページへ</div>
+          </div>
+        </div>
+        <div class="xactions"><span>♡ 34</span><span>↻ 6</span><span>🔖 保存</span></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 全体像 -->
+  <section>
+    <div class="khead"><span class="knum">概要</span><h2>やることは、この一本道です</h2></div>
+    <p class="ksub">3つの「できごと」を合図に、Xへ自動で投稿します。合図の拾い方（決定①）と投稿の出し方（決定②）だけ決めれば完成です。</p>
+    <div class="flow">
+      <div class="node"><span class="dot foil">＋</span>新規出品</div>
+      <span class="muted" style="font-size:13px">／ 売切れ ／ 値下げ</span>
+      <span class="arrow">→</span>
+      <div class="node"><span class="dot" style="background:var(--frame)">⚙</span>合図を検知</div>
+      <span class="arrow">→</span>
+      <div class="node"><span class="dot" style="background:var(--blue)">✦</span>Xへ投稿</div>
+      <span class="arrow">→</span>
+      <div class="node muted">重複なし・エラー時は再送</div>
+    </div>
+  </section>
+
+  <!-- 決定1 -->
+  <section>
+    <div class="khead"><span class="knum">決定 ①</span><h2>メルカリの「出品した」を、どう捉えるか</h2></div>
+    <p class="ksub">メルカリには外部向けの公式APIがありません。だからこそ「合図の起点」をどこに置くかが最初の分かれ道です。</p>
+    <div class="opts">
+      <div class="oc">
+        <span class="rec foil">おすすめ</span>
+        <div class="oc-inner">
+          <div class="oc-code"><span class="badge">A</span><span style="font-weight:800">スプシ起点</span></div>
+          <h3>出品時にシートへ1行、それが合図</h3>
+          <p class="desc">出品したら商品名などをスプレッドシート／フォームに1行入力。そこを起点に自動投稿します。「入力」といっても貼り付けるだけです。</p>
+          <div class="miniflow"><span class="chip you">あなた：1行入力</span><span class="arrow">→</span><span class="chip auto">自動：X投稿</span></div>
+          <ul class="spec">
+            <li><span class="k">安定性</span><span class="v g">◎ 壊れにくい</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate g">¥0〜ほぼ0</span></li>
+            <li><span class="k">保守の手間</span><span class="v g">ほぼ不要</span></li>
+            <li><span class="k">重複投稿</span><span class="v g">起きない</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="oc">
+        <div class="oc-inner">
+          <div class="oc-code"><span class="badge">B</span><span style="font-weight:800">巡回検知</span></div>
+          <h3>公開ページを自動で見張る</h3>
+          <p class="desc">メルカリの公開ページを定期的に巡回し、出品・売切れ・値下げの変化を自動で検知します。手入力は完全にゼロにできます。</p>
+          <div class="miniflow"><span class="chip auto">自動：ページ巡回</span><span class="arrow">→</span><span class="chip auto">変化検知→投稿</span></div>
+          <ul class="spec">
+            <li><span class="k">安定性</span><span class="v a">△ 仕様変更に弱い</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate g">低</span></li>
+            <li><span class="k">保守の手間</span><span class="v a">時々必要</span></li>
+            <li><span class="k">手入力</span><span class="v g">完全ゼロ</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 決定2 -->
+  <section>
+    <div class="khead"><span class="knum">決定 ②</span><h2>Xへ、どうやって投稿するか</h2></div>
+    <p class="ksub">現在のX APIは、投稿を完全自動化するには有料プラン（Basic・月額）が必要です。コストと手間のどちらを優先するかで選びます。</p>
+    <div class="opts">
+      <div class="oc">
+        <div class="oc-inner">
+          <div class="oc-code"><span class="badge">ア</span><span style="font-weight:800">完全自動</span></div>
+          <h3>合図が来たら、そのままXへ</h3>
+          <p class="desc">X APIを使い、人の操作を挟まず投稿まで自動化します。手間は完全にゼロ。とにかく放置で回したい方向けです。</p>
+          <div class="miniflow"><span class="chip auto">合図</span><span class="arrow">→</span><span class="chip auto">自動でX投稿</span></div>
+          <ul class="spec">
+            <li><span class="k">自動化度</span><span class="v g">◎ 手間ゼロ</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate a">X有料プラン(月額)</span></li>
+            <li><span class="k">投稿前の確認</span><span class="v">なし</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="oc">
+        <span class="rec foil">おすすめ</span>
+        <div class="oc-inner">
+          <div class="oc-code"><span class="badge">イ</span><span style="font-weight:800">下書き→1タップ</span></div>
+          <h3>下書きが届く。あとはポンと投稿</h3>
+          <p class="desc">投稿文を自動で生成してLINEやシートへ。あなたは最後にワンタップするだけ。無料枠で回せて、投稿前に一言添える余地も残ります。</p>
+          <div class="miniflow"><span class="chip auto">合図→下書き生成</span><span class="arrow">→</span><span class="chip you">1タップ投稿</span></div>
+          <ul class="spec">
+            <li><span class="k">自動化度</span><span class="v g">○ 1タップ</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate g">¥0（無料枠）</span></li>
+            <li><span class="k">投稿前の確認</span><span class="v g">できる</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- signature: recommended combo -->
+  <section>
+    <div class="pick foil foil-anim">
+      <div class="pick-inner">
+        <div class="tagfoil">RECOMMENDED BUILD ・ 最初の一手</div>
+        <h3>「A × イ」で始めるのが、いちばん軽い</h3>
+        <div class="combo">
+          <span class="cc">A：スプシ起点</span><span class="x">×</span><span class="cc">イ：下書き→1タップ</span>
+        </div>
+        <p>入力ひと手間 × 投稿ワンタップ。<strong style="color:#fff">月額0円・壊れにくい・重複なし</strong>で、いちばん安全に立ち上がります。運用に慣れて「完全放置にしたい」となれば、①B（巡回）や②ア（完全自動）へあとから拡張できる設計にします。</p>
+        <div class="pill3">
+          <span>月額 <b>¥0</b> から</span>
+          <span>保守 <b>ほぼ不要</b></span>
+          <span>あとから <b>拡張可能</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- sample posts -->
+  <section>
+    <div class="khead"><span class="knum">投稿例</span><h2>3つの合図で、こう投稿されます</h2></div>
+    <p class="ksub">文面・ハッシュタグ・絵文字はすべて、あとからご自身で変更できるようにします。</p>
+    <div class="samples">
+      <div class="sp">
+        <div class="tagline">◆ 新規出品</div>
+        <div class="txt">🔥新入荷！<br>青眼の白龍 レリーフ ¥18,000／状態：美品<br><span class="tag">#トレカ #遊戯王 #メルカリ</span><br>商品ページ→ mercari.com/…</div>
+      </div>
+      <div class="sp">
+        <div class="tagline tag-sold">◆ 売切れ</div>
+        <div class="txt">✅SOLD<br>青眼の白龍 レリーフ、お迎えありがとうございました！<br>在庫は随時追加中です<br><span class="tag">#トレカ #遊戯王</span></div>
+      </div>
+      <div class="sp">
+        <div class="tagline tag-down">◆ 値下げ</div>
+        <div class="txt">💰お値下げしました<br>青眼の白龍 レリーフ ¥18,000 → ¥16,500<br>今がチャンスです<br><span class="tag">#トレカ #メルカリ</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- deliver / how / price -->
+  <section>
+    <div class="grid3">
+      <div class="blk">
+        <div class="lab">納品物</div>
+        <ul>
+          <li>システム一式</li>
+          <li>ソースコード</li>
+          <li>導入手順書</li>
+          <li>設定変更マニュアル<br><small style="color:var(--slate)">文面・価格をご自身で変更できます</small></li>
+        </ul>
+      </div>
+      <div class="blk">
+        <div class="lab">進め方</div>
+        <ul>
+          <li>①A/B・②ア/イ をご返信</li>
+          <li>初回版を数日でご提示</li>
+          <li>実データに合わせて調整（2回込み）</li>
+          <li>納品・運用開始</li>
+        </ul>
+      </div>
+      <div class="blk">
+        <div class="lab">見積レンジ</div>
+        <div class="price">¥10,000–20,000</div>
+        <p class="note">選ぶ方式で前後します。詳細確認のうえ正式なお見積りをご提示します。X APIの有料プランを選ぶ場合、その月額は別途となります。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- close -->
+  <div class="close">
+    <div class="msg">
+      <h4>決めていただくのは、この2つだけです</h4>
+      <p>難しい設定はこちらで巻き取ります。まずはご希望の組み合わせ（迷ったら「A × イ」でOK）を教えてください。そのまま初回版の設計に入ります。</p>
+    </div>
+    <div class="askrow">
+      <span class="ask">① A / B ？</span>
+      <span class="ask">② ア / イ ？</span>
+    </div>
+  </div>
+
+  <footer class="sig">この資料の内容はすべて、ご返信の中で一緒に詰めていけます。ご不明点もお気軽にどうぞ。</footer>
+
+</div>
+</body>
+</html>
