@@ -119,6 +119,11 @@
   .spec .v{font-weight:700;text-align:right}
   .rate{font-family:var(--mono);font-weight:700}
   .g{color:var(--ok)} .a{color:var(--warn)}
+  .costnote{font-size:11.5px;color:var(--slate);line-height:1.55;margin:12px 2px 0;padding-top:10px;border-top:1px dashed var(--line)}
+  .costnote b{color:var(--warn)}
+  .optline{font-size:12.5px;line-height:1.55;background:#E9FAF6;border:1px solid #BEE9E1;border-radius:10px;padding:9px 11px;margin:0 0 14px}
+  .optline b{color:#0E7C63}
+  .optline .lead-ic{font-weight:800;color:#0E7C63}
 
   /* --- signature recommend card --- */
   .pick{position:relative;border-radius:22px;padding:3px;margin-top:8px}
@@ -280,9 +285,10 @@
           <div class="miniflow"><span class="chip auto">合図</span><span class="arrow">→</span><span class="chip auto">自動でX投稿</span></div>
           <ul class="spec">
             <li><span class="k">自動化度</span><span class="v g">◎ 手間ゼロ</span></li>
-            <li><span class="k">運用コスト</span><span class="v rate a">X有料プラン(月額)</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate a">従量課金・月額固定なし</span></li>
             <li><span class="k">投稿前の確認</span><span class="v">なし</span></li>
           </ul>
+          <p class="costnote">X APIは2026年2月から従量課金制。<b>リンク付き投稿 約 $0.20/件</b>（メルカリURLを載せる新規・値下げが該当）、通常投稿 $0.015/件。月額の固定費は不要です。<br>目安：1日リンク付き10件で月 約 $60（約 ¥9,000前後・為替により変動）。</p>
         </div>
       </div>
       <div class="oc">
@@ -290,11 +296,12 @@
         <div class="oc-inner">
           <div class="oc-code"><span class="badge">イ</span><span style="font-weight:800">下書き→1タップ</span></div>
           <h3>下書きが届く。あとはポンと投稿</h3>
-          <p class="desc">投稿文を自動で生成してLINEやシートへ。あなたは最後にワンタップするだけ。無料枠で回せて、投稿前に一言添える余地も残ります。</p>
-          <div class="miniflow"><span class="chip auto">合図→下書き生成</span><span class="arrow">→</span><span class="chip you">1タップ投稿</span></div>
+          <p class="desc">投稿文を自動で生成。あなたは最後にワンタップするだけ。X APIを使わないので費用は¥0、投稿前に一言添える余地も残ります。</p>
+          <div class="miniflow"><span class="chip auto">合図→下書き生成</span><span class="arrow">→</span><span class="chip auto">LINEに通知</span><span class="arrow">→</span><span class="chip you">1タップ投稿</span></div>
+          <p class="optline"><span class="lead-ic">＋オプション</span>　<b>下書き完成をLINEに通知</b>。「自動なのに気づかず投稿し忘れ」を防ぎ、外出先からでもすぐ投稿できます。</p>
           <ul class="spec">
             <li><span class="k">自動化度</span><span class="v g">○ 1タップ</span></li>
-            <li><span class="k">運用コスト</span><span class="v rate g">¥0（無料枠）</span></li>
+            <li><span class="k">運用コスト</span><span class="v rate g">¥0（API不要）</span></li>
             <li><span class="k">投稿前の確認</span><span class="v g">できる</span></li>
           </ul>
         </div>
@@ -311,9 +318,10 @@
         <div class="combo">
           <span class="cc">A：スプシ起点</span><span class="x">×</span><span class="cc">イ：下書き→1タップ</span>
         </div>
-        <p>入力ひと手間 × 投稿ワンタップ。<strong style="color:#fff">月額0円・壊れにくい・重複なし</strong>で、いちばん安全に立ち上がります。運用に慣れて「完全放置にしたい」となれば、①B（巡回）や②ア（完全自動）へあとから拡張できる設計にします。</p>
+        <p>入力ひと手間 × 投稿ワンタップ。<strong style="color:#fff">月額0円・壊れにくい・重複なし</strong>で、いちばん安全に立ち上がります。下書きは<strong style="color:#fff">LINEに届く</strong>ので投稿し忘れも防げます。運用に慣れて「完全放置にしたい」となれば、①B（巡回）や②ア（完全自動）へあとから拡張できる設計にします。</p>
         <div class="pill3">
           <span>月額 <b>¥0</b> から</span>
+          <span>LINEで <b>見逃さない</b></span>
           <span>保守 <b>ほぼ不要</b></span>
           <span>あとから <b>拡張可能</b></span>
         </div>
@@ -382,7 +390,7 @@
     </div>
   </div>
 
-  <footer class="sig">この資料の内容はすべて、ご返信の中で一緒に詰めていけます。ご不明点もお気軽にどうぞ。</footer>
+  <footer class="sig">この資料の内容はすべて、ご返信の中で一緒に詰めていけます。ご不明点もお気軽にどうぞ。<br>※X APIの料金は2026年2月開始の従量課金制に基づく目安です（¥表記は為替により変動します）。</footer>
 
 </div>
 </body>
